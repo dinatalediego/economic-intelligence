@@ -94,7 +94,17 @@ def load_inputs(eip_root: Path) -> tuple[list[dict[str, str]], list[dict[str, st
         )
 
     summary_path = exports / "run_summary.json"
-    summary = json.loads(summary_path.read_text(encoding="utf-8")) if summary_path.is_file() else {}
+    if not summary_path.is_file():
+        raise FileNotFoundError(f"Run summary not found: {summary_path}. Run EIP refresh first.")
+    summary = json.loads(summary_path.read_text(encoding="utf-8"))
+    pipeline_summary = gate_doc.get("pipeline", {})
+    if summary.get("successful_series") != len(registry):
+        raise ValueError("Run summary series count does not match the current registry.")
+    if summary.get("observation_rows") != len(monthly):
+        raise ValueError("Run summary observation count does not match the monthly export.")
+    if pipeline_summary.get("fetched_at") != summary.get("fetched_at"):
+        raise ValueError("Freshness gate and run summary do not describe the same EIP refresh.")
+
     return registry, monthly, snapshots, {"gate": gate, "run_summary": summary, "paths": {
         "registry": config,
         "monthly": exports / "macro_monthly_long.csv",
@@ -122,6 +132,8 @@ def validate_inputs(registry, monthly, snapshots) -> None:
         if row["domain"].strip() != spec["domain"].strip() or row["unit"].strip() != spec["unit"].strip():
             raise ValueError(f"Domain or unit mismatch for provider_code {code}.")
         period = as_date(row["period_start"], "period_start")
+        if period is None:
+            raise ValueError(f"Monthly observation has no period for provider_code {code}.")
         key = (code, period.isoformat())
         if key in seen:
             raise ValueError(f"Duplicate monthly observation: {key}")
