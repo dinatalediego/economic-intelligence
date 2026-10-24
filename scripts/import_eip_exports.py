@@ -234,7 +234,7 @@ def main() -> int:
 
     with psycopg.connect(dsn) as conn:
         with conn.transaction():
-            conn.execute(MIGRATION.read_text(encoding="utf-8"))
+            conn.execute(MIGRATION.read_text(encoding="utf-8"), prepare=False)
             conn.execute(
                 """
                 INSERT INTO economic_intelligence.ingest_batch
