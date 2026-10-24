@@ -248,6 +248,7 @@ def main() -> int:
                     sha256(paths["monthly"]), sha256(paths["snapshots"]), sha256(paths["registry"]),
                 ),
             )
+            conn.execute("UPDATE economic_intelligence.macro_series_catalog SET active = FALSE")
             conn.executemany(
                 """
                 INSERT INTO economic_intelligence.macro_series_catalog
@@ -260,7 +261,7 @@ def main() -> int:
                     display_unit=EXCLUDED.display_unit, nature=EXCLUDED.nature,
                     primary_signal=EXCLUDED.primary_signal, title=EXCLUDED.title,
                     authoring_source=EXCLUDED.authoring_source,
-                    source_page_url=EXCLUDED.source_page_url, updated_at=now()
+                    source_page_url=EXCLUDED.source_page_url, active=TRUE, updated_at=now()
                 """,
                 catalog_rows,
             )
