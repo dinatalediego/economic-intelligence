@@ -25,6 +25,7 @@ CREATE TABLE IF NOT EXISTS economic_intelligence.macro_series_catalog (
     title TEXT NOT NULL,
     authoring_source TEXT NOT NULL,
     source_page_url TEXT NOT NULL,
+    active BOOLEAN NOT NULL DEFAULT TRUE,
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
@@ -76,7 +77,8 @@ SELECT
     c.source_page_url,
     m.batch_id
 FROM economic_intelligence.macro_monthly AS m
-JOIN economic_intelligence.macro_series_catalog AS c USING (provider_code);
+JOIN economic_intelligence.macro_series_catalog AS c USING (provider_code)
+WHERE c.active;
 
 CREATE OR REPLACE VIEW economic_intelligence.v_macro_latest AS
 SELECT DISTINCT ON (s.provider_code)
@@ -111,5 +113,5 @@ SELECT DISTINCT ON (s.provider_code)
 FROM economic_intelligence.macro_snapshot AS s
 JOIN economic_intelligence.macro_series_catalog AS c USING (provider_code)
 JOIN economic_intelligence.ingest_batch AS b USING (batch_id)
-WHERE b.freshness_decision = 'PUBLISH'
+WHERE b.freshness_decision = 'PUBLISH' AND c.active
 ORDER BY s.provider_code, b.imported_at DESC;
